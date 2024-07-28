@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'pescavolutionApp',
 ]
 
 MIDDLEWARE = [
@@ -80,6 +81,13 @@ DATABASES = {
     }
 }
 
+#Conexión con Opensearch
+OPENSEARCH_HOST = 'localhost'
+OPENSEARCH_PORT = 9200
+OPENSEARCH_AUTH = ('admin', 'admin')  # Solo para pruebas. En un despliegue real se debería quitar del código
+OPENSEARCH_INDEX = "ventaspesqueras"
+# OPENSEARCH_INDEX = "pescadatos"
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
@@ -103,9 +111,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.0/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'es-es'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Europe/Madrid'
 
 USE_I18N = True
 

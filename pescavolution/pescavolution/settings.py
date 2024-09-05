@@ -38,6 +38,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'pescavolutionApp',
+    'django_plotly_dash.apps.DjangoPlotlyDashConfig',
+    'crispy_forms',
+    'crispy_bootstrap5'
 ]
 
 MIDDLEWARE = [
@@ -48,6 +51,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django_plotly_dash.middleware.BaseMiddleware',
 ]
 
 ROOT_URLCONF = 'pescavolution.urls'
@@ -129,3 +133,44 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Requisito para django_plotly_dash
+
+X_FRAME_OPTIONS = 'SAMEORIGIN'
+
+# Staticfiles finders for locating dash app assets and related files
+
+# STATICFILES_FINDERS = [
+
+#     'django.contrib.staticfiles.finders.FileSystemFinder',
+#     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+
+#     'django_plotly_dash.finders.DashAssetFinder',
+#     'django_plotly_dash.finders.DashComponentFinder',
+#     'django_plotly_dash.finders.DashAppDirectoryFinder',
+# ]
+
+# Plotly components containing static content that should
+# be handled by the Django staticfiles infrastructure
+
+PLOTLY_COMPONENTS = [
+
+    # Common components (ie within dash itself) are automatically added
+
+    # django-plotly-dash components
+    'dpd_components',
+    # static support if serving local assets
+    # 'dpd_static_support',
+
+    # Other components, as needed
+    'dash_renderer',
+    'dash_bootstrap_components',
+]
+
+# Configurar el tamaño máximo de descarga de un fichero (5 Mb)
+DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880
+
+CRISPY_TEMPLATE_PACK="bootstrap5"
+
+LOGIN_REDIRECT_URL = "/"
+LOGOUT_REDIRECT_URL = "/login"

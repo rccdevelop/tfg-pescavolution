@@ -3,11 +3,10 @@ from utils import *
 from django.conf import settings
 import plotly.graph_objects as go
 from plotly.offline import plot
-import plotly.io as pio
 
+import pandas as pd
 
 # Definición de páginas (vistas) de la aplicación.
-
     
 def home(request):
     client = get_opensearch_client()
@@ -68,7 +67,7 @@ def home(request):
     )
     
     fig = go.Figure(data=data, layout=layout)
-    plot_div = plot(fig, output_type='div')
+    plot_div = plot(fig, output_type='div', config={'displayModeBar': False}) #displayModelBar: para desactivar la barra de navegación de plotly
 
 
     user_query = "adra"
@@ -88,7 +87,10 @@ def home(request):
             "kilos": hit["_source"]["kilos"],
             "euros": hit["_source"]["euros"]
     })
-    # Pase los datos agregados al contexto
+        
+    df = pd.DataFrame(data)
+    # print(pd.unique(df["lonja"]))
+    # Pasar los datos agregados al contexto
     context = {
         "data": data,
         "plot_div": plot_div
@@ -104,3 +106,9 @@ def cargaDatos(request):
         message = "Selecciona un fichero"
         
     return render(request, "pescavolutionApp/cargaDatos.html", {"message": message})
+
+def filtros(request):
+    return render(request, "pescavolutionApp/filtros.html")
+
+def agrupaciones(request):
+    return render(request, "pescavolutionApp/agrupaciones.html")

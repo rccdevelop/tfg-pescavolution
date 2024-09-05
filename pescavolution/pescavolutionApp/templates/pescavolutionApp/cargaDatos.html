@@ -1,23 +1,29 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
-    <h1>Cargar datos CSV en OpenSearch</h1>
+{% extends "pescavolutionApp/base.html" %}
 
-    <form method="post" enctype="multipart/form-data">
-        {% csrf_token %}
-        <label for="csv_file">Seleccionar archivo CSV:</label>
-        <input type="file" id="csv_file" name="csv_file" required>
-        <br>
-        <button type="submit">Cargar datos</button>
+{% load static %}
 
-        {% if message %} 
-            <p>{{ message }}</p>
-        {% endif %}
-    </form>
-</body>
-</html>
+{% block content %}
+    <div class="main">
+        <div class="card border-success mb-3" style="max-width: 110rem;">
+            <div class="card-header text-success">Actualización de datos pesqueros</div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <label for="csv_file" class="form-label">Seleccionar archivo CSV:</label>
+                    <input class="form-control btn btn-outline-success" type="file" id="csv_file" required>
+                    {% comment %} <label for="csv_file">Seleccionar archivo CSV:</label> {% endcomment %}
+                    {% comment %} <p> {% endcomment %}
+                    {% comment %} <input type="file" id="csv_file" name="csv_file" class="btn btn-outline-success" required> {% endcomment %}
+                    <br><br>
+                    <button type="submit" class="btn btn-success">Cargar Datos</button>
+                    {% comment %} <button type="submit">Cargar datos</button> {% endcomment %}
+                    <p>        
+                    {% if message %} 
+                        <p>{{ message }}</p>
+                    {% endif %}
+                </form>
+            </div>
+          </div>        
+    </div>
+
+{% endblock %}

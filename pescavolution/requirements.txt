@@ -1,0 +1,7 @@
+dash==2.9.3
+dash_bootstrap_components==1.6.0
+Django==5.0.2
+django_plotly_dash==2.3.1
+opensearch_py==1.0.0
+pandas==2.2.3
+plotly==5.22.0

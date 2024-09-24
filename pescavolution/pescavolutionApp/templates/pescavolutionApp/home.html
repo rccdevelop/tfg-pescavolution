@@ -3,12 +3,15 @@
 {% load static %}
 
 {% block content %}
-
     {% load plotly_dash %}
     <div class="card-body">
       <div class="{% plotly_class name='Dashboard' %}">
-
-        {% plotly_app name="Dashboard" ratio=1.1 %}
+        <script>
+          // Inyectar el user_id como dato inicial en Dash
+          var currentUserId = "{{ user_id }}";
+          window.userId = currentUserId;
+      </script>
+        {% plotly_app name="Dashboard" ratio=1.1 initial_arguments=dash_context %}
 
       </div>
     </div>

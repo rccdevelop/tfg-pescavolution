@@ -46,14 +46,20 @@
         <ul class="nav nav-pills flex-column mb-auto">
           <li>
             <a href="/" class="nav-link text-white">
+              <svg class="bi pe-none me-2" width="16" height="16"><use xlink:href="#home"/></svg>
+              Inicio
+            </a>
+          </li>
+          <li>
+            <a href="/misFiltros/" class="nav-link text-white">
               <svg class="bi pe-none me-2" width="16" height="16"><use xlink:href="#speedometer2"/></svg>
-              Dashboard
+              Mis Dashboards
             </a>
           </li>
           {% comment %} Si el usuario es administrador, permitir la carga de nuevos datos {% endcomment %}
           {%if user.is_superuser%}
             <li>
-                <a href="cargaDatos" class="nav-link text-white">
+                <a href="/cargaDatos" class="nav-link text-white">
                 <svg class="bi pe-none me-2" width="16" height="16"><use xlink:href="#table"/></svg>
                 Carga Datos
               </a>

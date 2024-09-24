@@ -1,5 +1,6 @@
 import dash
 from dash import dcc, html, dash_table
+from dash.exceptions import PreventUpdate
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -10,6 +11,8 @@ from repository import *
 import dash_bootstrap_components as dbc
 from dash.dash_table.Format import Format, Scheme
 from io import StringIO
+import json
+from pescavolutionApp.models import FiltroUsuario
 
 from django_plotly_dash import DjangoDash
 
@@ -23,6 +26,9 @@ def getColumnsAllData():
             dict(name='Total Euros (€)', id='euros', type='numeric', format=Format(precision=2, scheme=Scheme.fixed).group(True))]
   
   return columns
+
+#Obtener los dashboards existententes en base de datos
+dashboards_usuarios = FiltroUsuario.objects.all()
 
 # Conexión con OpenSearch
 client = get_opensearch_client()
@@ -51,6 +57,35 @@ external_stylesheets = [dbc.themes.BOOTSTRAP, dbc.icons.BOOTSTRAP]
 app = DjangoDash('Dashboard', external_stylesheets = external_stylesheets)
 
 app.layout = dbc.Container([
+  html.Div([
+    dcc.Input(id='user_id', persistence=False, value="test", style={'display': 'none'}), #Input no visible para guardar el id de usuario autenticado
+    dbc.Card([
+      dbc.CardHeader("Cargar y Guardar Dashboards"),
+        dbc.CardBody([
+          dbc.Row(
+            [
+              dbc.Col([
+                html.Div("Cargar Dashboards"),
+                dcc.Dropdown(id='filters-dropdown', 
+                            options = [{'label': f.nombreFiltro, 'value': f.id} for f in dashboards_usuarios],
+                            placeholder="Selecciona un dashboard"),
+                html.P(),
+                dbc.Button("Cargar Dashboard", color="success", className="me-1", id='btnAplicarFiltro'),
+                
+              ]),
+              dbc.Col([
+                html.Div("Guardar Dashboard"),
+                dcc.Input(id='filter-name', type='text', placeholder="Introduce nombre del nuevo Dashboard", style={'width': '100%'}),
+                html.P(),
+                dbc.Button("Guardar Dashboard", color="success", className="me-1", id='save-filter-btn'),
+                html.P(),
+                html.Div(id='lblSaveFilter')
+              ])
+            ]
+          ),  
+        ])
+      ], color="success", outline=True),
+    ], style={'marginTop': '1', 'marginBottom': '1', 'padding':'1rem', 'margin':'1rem'}),
   html.Div(
     [
       dbc.Card([
@@ -62,18 +97,8 @@ app.layout = dbc.Container([
               dbc.Col([html.Label('Rango de fechas:', style={'color': 'green', 'font-size': 20, 'font-weight': 'bold'}), html.Br(),
                        dcc.DatePickerSingle(id="start_date", clearable=True, display_format="YYYY-MM-DD", placeholder="Inicio:", min_date_allowed=date(2000, 1, 1), max_date_allowed=date(2023, 12, 31), initial_visible_month=date(2013, 1, 1)),
                        dcc.DatePickerSingle(id="end_date", clearable=True, display_format="YYYY-MM-DD", placeholder="Fin:", min_date_allowed=date(2000, 1, 1), max_date_allowed=date(2023, 12, 31), initial_visible_month=date(2023, 12, 1))
-              #   dcc.DatePickerRange(
-              #         id='rangoFechas',
-              #         min_date_allowed=date(2000, 1, 1),
-              #         max_date_allowed=date(2023, 12, 31),
-              #         initial_visible_month=date(2023, 12, 1),
-              #         display_format = "YYYY/MM/DD",      
-              #         first_day_of_week=1,
-              #         start_date=date(2014, 1, 1),
-              #         end_date=date(2023, 12, 31),
-              # )
               ], align="center"),
-              
+        
               dbc.Col([html.Label('Provincia:', style={'color': 'green', 'font-size': 20, 'font-weight': 'bold'}),
                 dcc.Dropdown(
                       id="provincias",
@@ -90,7 +115,8 @@ app.layout = dbc.Container([
                       clearable=True,
                       multi = True,
                       style={'color': 'green', 'font-size': 15, 'font-family': 'system-ui'},
-                      placeholder="Selecciona Establecimiento..."
+                      placeholder="Selecciona Establecimiento...",
+                      options=[{'label': i, 'value': i} for i in df_establecimientos]
               )], align="center"),
               
               dbc.Col([html.Label('Tipo especie:', style={'color': 'green', 'font-size': 20, 'font-weight': 'bold'}),
@@ -109,7 +135,8 @@ app.layout = dbc.Container([
                       clearable=True,
                       multi = True,
                       style={'color': 'green', 'font-size': 15, 'font-family': 'system-ui'},
-                      placeholder="Selecciona Especie..."
+                      placeholder="Selecciona Especie...",
+                      options=[{'label': i, 'value': i} for i in df_especies]
               )], align="center"),
             ]
           )
@@ -205,6 +232,112 @@ app.layout = dbc.Container([
     ], style={'marginTop': '5', 'marginBottom': '5', 'padding':'1rem', 'margin':'1rem'})
     
 ])], fluid=True)
+
+# Implementación de callback para cargar los dashboards del usuario auntenticado
+# @app.callback(
+#     dash.dependencies.Output('filters-dropdown', 'options'),
+#     dash.dependencies.Input('filters-dropdown', 'value'),
+#     dash.dependencies.State('user_id', 'value')
+# )
+# def cargar_dashboards(value,state_value):
+#   filtrosUsuario = FiltroUsuario.objects.filter(usuario_id=state_value)
+#   options = [{'label': f.nombreFiltro, 'value': f.id} for f in filtrosUsuario]
+#   return options                                  
+
+# @app.callback(
+#     dash.dependencies.Output('filter-data-store', 'data'),
+#     dash.dependencies.Input('filters-dropdown', 'value')
+# )
+# def load_filter_data(selected_filter_id):
+#   if not selected_filter_id:
+#     return {}
+    
+#   # Buscar el filtro seleccionado
+#   user_filter = FiltroUsuario.objects.get(id=selected_filter_id)
+#   # Extraer el campo datosFiltro y almacenarlo en el store
+#   datos_filtro = json.dumps(user_filter.datosFiltro)
+#   datosJSON = json.loads(datos_filtro)
+#   provincia = datosJSON.get('provincia', [])
+#   establecimiento = datosJSON.get('establecimiento', [])
+#   tipoespecie = datosJSON.get('tipoespecie', [])
+#   especie = datosJSON.get('especie', [])
+#   return datosJSON
+
+# Implementación de callback para cargar el dashboard seleccionado y aplicar los filtros
+@app.callback(
+    dash.dependencies.Output('provincias', 'value'),
+    dash.dependencies.Output('lonjas', 'value'),
+    dash.dependencies.Output('tipoespecies', 'value'),
+    dash.dependencies.Output('especies', 'value'),
+    dash.dependencies.Input('btnAplicarFiltro', 'n_clicks'),
+    dash.dependencies.State('filters-dropdown', 'value')
+)
+def aplicar_filtros_update(n_clicks, filtro_id):
+  if n_clicks and filtro_id:
+    #Buscamos el dashboard en base de datos
+    user_filter = FiltroUsuario.objects.get(id=filtro_id)
+    datos_filtro = json.dumps(user_filter.datosFiltro)
+    datosJSON = json.loads(datos_filtro)
+    provincia = datosJSON.get('provincia', [])
+    establecimiento = datosJSON.get('establecimiento', [])
+    tipoespecie = datosJSON.get('tipoespecie', [])
+    especie = datosJSON.get('especie', [])
+    def normalize_value(value):
+        if isinstance(value, list):
+            return value
+        elif value:
+            return [value]  # Convierte en lista si es un solo valor
+        return None
+    return (
+        normalize_value(provincia),
+        normalize_value(establecimiento),
+        normalize_value(tipoespecie),
+        normalize_value(especie)
+    )
+  # raise PreventUpdate #Si no se carga un dashboard, no actualizamos nada
+
+# Callback para guardar los filtros seleccionados por el usuario como un nuevo dashboard
+@app.callback(
+    dash.dependencies.Output('lblSaveFilter', 'children'),
+    dash.dependencies.Output('filters-dropdown', 'options'),
+    dash.dependencies.Input('save-filter-btn', 'n_clicks'),
+    dash.dependencies.Input('filter-name', 'value'),
+    dash.dependencies.State('provincias', 'value'),
+    dash.dependencies.State('lonjas', 'value'),
+    dash.dependencies.State('tipoespecies', 'value'),
+    dash.dependencies.State('especies', 'value'),
+    dash.dependencies.State('user_id', 'value')  # Estado para obtener el usuario conectado
+)
+def save_dashboard(n_clicks, filter_name, selected_provincia,selected_lonja,selected_tipoespecie, selected_especie, user_data):
+  if n_clicks:
+    
+    # Preparar el JSON con los valores de los filtros seleccionados
+    datos_filtro = {
+      "provincia": selected_provincia or "", # Usar lista vacía si no hay valor seleccionado
+      "establecimiento": selected_lonja or "",
+      "tipoespecie": selected_tipoespecie or "",
+      "especie": selected_especie or "", 
+    }
+    # Convertir el diccionario a JSON
+    datos_filtro_json = json.dumps(datos_filtro)
+    datosJSON = json.loads(datos_filtro_json)
+
+    # Crear y guardar el nuevo filtro en la base de datos
+    new_filter = FiltroUsuario(
+      nombreFiltro=filter_name,
+      datosFiltro=datosJSON,
+      usuario_id=user_data
+    )
+    
+    new_filter.save()
+    
+    #actualizar los dashboards seleccionables con el último creado
+    dashboards = FiltroUsuario.objects.all()
+    options = [{'label': f.nombreFiltro, 'value': f.id} for f in dashboards]
+
+    # Devolver los datos para confirmar que se ha guardado (opcional)
+    return "Dashboard creado correctamente",options
+  raise PreventUpdate
 
 # Implementación de varios callbacks para hacer que los listados (Dropdowns) se actualicen según el valor seleccionado en el Dropdown anterior
 
@@ -331,4 +464,3 @@ def update_graphs(provincias,lonjas,tipoespecies,especies,start_date,end_date):
     all_data = filtered_df.to_dict('records')
     
     return "", fig1,{}, txtKilos, txtEuros, txtPrecio, fig2,{}, tableKilos, tableEuros, all_data
-                                      

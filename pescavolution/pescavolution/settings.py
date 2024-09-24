@@ -40,7 +40,7 @@ INSTALLED_APPS = [
     'pescavolutionApp',
     'django_plotly_dash.apps.DjangoPlotlyDashConfig',
     'crispy_forms',
-    'crispy_bootstrap5'
+    'crispy_bootstrap5',
 ]
 
 MIDDLEWARE = [

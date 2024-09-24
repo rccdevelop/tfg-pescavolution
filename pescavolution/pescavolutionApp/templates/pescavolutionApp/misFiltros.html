@@ -1,0 +1,48 @@
+{% extends "pescavolutionApp/base.html" %}
+
+{% load static %}
+
+{% block content %}
+
+<div class="main">
+
+    {% comment %} Mostrar listado con dashboards guardados {% endcomment %}
+    <div class="card border-success mb-3" style="max-width: 110rem;">
+        <div class="card-header text-success">Mis Dashboards</div>
+        <div class="card-body">
+            <ul>
+                {% for filter in filtros_usuario %}
+                <li>
+                    {{ filter.nombreFiltro }}
+                    <a class="link-success link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover" href="{% url 'export_filter' filter.id %}">Exportar a JSON</a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    {% comment %} Formulario para importar dashboard desde un fichero externo {% endcomment %}
+    <div class="card border-success mb-3" style="max-width: 110rem;">
+        <div class="card-header text-success">Importar Dashboard</div>
+        <div class="card-body">
+            <form action="{% url 'import_filter' %}" method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="form-floating mb-3">
+                    <input class="form-control border border-success" type="text" id="nombreFiltro" placeholder="NombreDashboard" name="nombreFiltro">
+                    <label for="nombreFiltro">Nombre del Dashboard</label>
+                </div>
+                <p><p>
+                <label for="json_file">Seleccionar archivo JSON:</label>
+                <input class="form-control btn btn-outline-success" type="file" name="json_file" required>
+                <p><p>
+                <button class="btn btn-success" type="submit">Importar Dashboard</button>
+                {% if message %} 
+                    <p>{{ message }}</p>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

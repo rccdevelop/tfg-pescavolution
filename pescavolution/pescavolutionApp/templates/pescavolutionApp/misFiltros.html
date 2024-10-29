@@ -14,7 +14,7 @@
                 {% for filter in filtros_usuario %}
                 <li>
                     {{ filter.nombreFiltro }}
-                    <a class="link-success link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover" href="{% url 'export_filter' filter.id %}">Exportar a JSON</a>
+                    <a class="link-success link-offset-2 link-underline-opacity-25 link-underline-opacity-100-hover" href="{% url 'export_filter' filter.id %}">Exportar Dashboard</a>
                 </li>
                 {% endfor %}
             </ul>

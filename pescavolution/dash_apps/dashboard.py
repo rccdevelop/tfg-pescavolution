@@ -1,5 +1,5 @@
 import dash
-from dash import dcc, html, dash_table
+from dash import dcc, html, dash_table, no_update
 from dash.exceptions import PreventUpdate
 import pandas as pd
 import plotly.express as px
@@ -95,8 +95,8 @@ app.layout = dbc.Container([
           dbc.Row(
             [
               dbc.Col([html.Label('Rango de fechas:', style={'color': 'green', 'font-size': 20, 'font-weight': 'bold'}), html.Br(),
-                       dcc.DatePickerSingle(id="start_date", clearable=True, display_format="YYYY-MM-DD", placeholder="Inicio:", min_date_allowed=date(2000, 1, 1), max_date_allowed=date(2023, 12, 31), initial_visible_month=date(2013, 1, 1)),
-                       dcc.DatePickerSingle(id="end_date", clearable=True, display_format="YYYY-MM-DD", placeholder="Fin:", min_date_allowed=date(2000, 1, 1), max_date_allowed=date(2023, 12, 31), initial_visible_month=date(2023, 12, 1))
+                       dcc.DatePickerSingle(id="start_date", date=date(2014, 1, 1), clearable=True, display_format="YYYY-MM-DD", placeholder="Inicio:", min_date_allowed=date(2000, 1, 1), max_date_allowed=date(2023, 12, 31), initial_visible_month=date(2013, 1, 1)),
+                       dcc.DatePickerSingle(id="end_date", date=date(2023, 12, 31), clearable=True, display_format="YYYY-MM-DD", placeholder="Fin:", min_date_allowed=date(2000, 1, 1), max_date_allowed=date(2023, 12, 31), initial_visible_month=date(2023, 12, 1))
               ], align="center"),
         
               dbc.Col([html.Label('Provincia:', style={'color': 'green', 'font-size': 20, 'font-weight': 'bold'}),
@@ -138,6 +138,18 @@ app.layout = dbc.Container([
                       placeholder="Selecciona Especie...",
                       options=[{'label': i, 'value': i} for i in df_especies]
               )], align="center"),
+            ]
+          ),
+          
+          dbc.Row(
+            [
+              html.Div("Escala de tiempo:"),
+              dcc.RadioItems(
+                id="periodo-items",
+                options=["días", "meses", "años"],
+                value="años",
+                inline=True
+              )
             ]
           )
         ])
@@ -233,36 +245,6 @@ app.layout = dbc.Container([
     
 ])], fluid=True)
 
-# Implementación de callback para cargar los dashboards del usuario auntenticado
-# @app.callback(
-#     dash.dependencies.Output('filters-dropdown', 'options'),
-#     dash.dependencies.Input('filters-dropdown', 'value'),
-#     dash.dependencies.State('user_id', 'value')
-# )
-# def cargar_dashboards(value,state_value):
-#   filtrosUsuario = FiltroUsuario.objects.filter(usuario_id=state_value)
-#   options = [{'label': f.nombreFiltro, 'value': f.id} for f in filtrosUsuario]
-#   return options                                  
-
-# @app.callback(
-#     dash.dependencies.Output('filter-data-store', 'data'),
-#     dash.dependencies.Input('filters-dropdown', 'value')
-# )
-# def load_filter_data(selected_filter_id):
-#   if not selected_filter_id:
-#     return {}
-    
-#   # Buscar el filtro seleccionado
-#   user_filter = FiltroUsuario.objects.get(id=selected_filter_id)
-#   # Extraer el campo datosFiltro y almacenarlo en el store
-#   datos_filtro = json.dumps(user_filter.datosFiltro)
-#   datosJSON = json.loads(datos_filtro)
-#   provincia = datosJSON.get('provincia', [])
-#   establecimiento = datosJSON.get('establecimiento', [])
-#   tipoespecie = datosJSON.get('tipoespecie', [])
-#   especie = datosJSON.get('especie', [])
-#   return datosJSON
-
 # Implementación de callback para cargar el dashboard seleccionado y aplicar los filtros
 @app.callback(
     dash.dependencies.Output('provincias', 'value'),
@@ -294,6 +276,8 @@ def aplicar_filtros_update(n_clicks, filtro_id):
         normalize_value(tipoespecie),
         normalize_value(especie)
     )
+  else:
+    return no_update,no_update,no_update,no_update
   # raise PreventUpdate #Si no se carga un dashboard, no actualizamos nada
 
 # Callback para guardar los filtros seleccionados por el usuario como un nuevo dashboard
@@ -380,6 +364,35 @@ def generate_csv(n_clicks, data):
     df = pd.DataFrame(data)
     csv_string = df.to_csv(index=False, encoding='utf-8')
     return dict(content=StringIO(csv_string).getvalue(), filename="pescavolution.csv")
+  
+
+# Callback para actualizar el RadioItems para seleccionar días, meses o años según el rango de fechas
+@app.callback(
+    dash.dependencies.Output('periodo-items', 'options'),
+    dash.dependencies.Output('periodo-items', 'value'),
+    [dash.dependencies.Input('start_date', 'date'),
+     dash.dependencies.Input('end_date', 'date')]
+)
+def update_radioitems(start_date, end_date):
+    if start_date and end_date:
+      # Convertimos las fechas a objetos datetime
+      start_date_object = date.fromisoformat(start_date)
+      end_date_object = date.fromisoformat(end_date)
+      diff_dias = (end_date_object - start_date_object).days
+      options = []
+      default_value = 'años'
+      if diff_dias <= 60:
+        options = [{'label': 'días', 'value': 'días'}, {'label': 'meses', 'value': 'meses'}, {'label': 'años', 'value': 'años'}]
+        default_value = 'días'
+      elif 60 < diff_dias <= 730:
+        options = [{'label': 'meses', 'value': 'meses'}, {'label': 'años', 'value': 'años'}]
+        default_value = 'meses'
+      else:
+        options = [{'label': 'años', 'value': 'años'}]
+
+      return options, default_value
+
+    return [{'label': 'años', 'value': 'años'}], 'años'
 
 # Callback general
 @app.callback(
@@ -399,35 +412,47 @@ def generate_csv(n_clicks, data):
     dash.dependencies.Input('tipoespecies', 'value'),
     dash.dependencies.Input('especies', 'value'),
     dash.dependencies.Input('start_date', 'date'),
-    dash.dependencies.Input('end_date', 'date')
+    dash.dependencies.Input('end_date', 'date'),
+    dash.dependencies.Input('periodo-items', 'value')
 )
 
-def update_graphs(provincias,lonjas,tipoespecies,especies,start_date,end_date):
-    # start_date_object = date.fromisoformat(start_date)
-    # end_date_object = date.fromisoformat(end_date)
-    # diff_dias = end_date - start_date
-    # if not selected_lonja:
-        # return {}, {}  # Si no se selecciona ninguna lonja, devuelve figuras vacías
+def update_graphs(provincias,lonjas,tipoespecies,especies,start_date,end_date, periodo):
     if not provincias and not lonjas and not tipoespecies and not especies:
       return "Selecciona un elemento de los filtros para mostrar resultados",{'data': []},{'visibility': 'hidden'}, "N/A", "N/A", "N/A", {},{'visibility': 'hidden'}, None, None, None
     
     if start_date and end_date:
-      df_ventas = obtenerVentas(start_date,end_date, client)
+      df_ventas = obtenerVentas(start_date,end_date,client)
+      # Obtener los datos agrupados por el periodo seleccionado
+      maindf = obtenerVentasPeriodo(start_date,end_date,periodo,client)
     else:
       df_ventas = df
+      # Obtener los datos agrupados por defecto
+      maindf = obtenerVentasPeriodo("2014-01-01","2023-12-31","años",client)
       
     filtered_df = df_ventas
-    
     
     #Filtrar los resultados
     if provincias:
       filtered_df = filtered_df[filtered_df['provincia'].isin(provincias)]
+      maindf = maindf[maindf['provincia'].isin(provincias)]
     if lonjas:
       filtered_df = filtered_df[filtered_df['establecimiento'].isin(lonjas)]
+      maindf = maindf[maindf['establecimiento'].isin(lonjas)]
     if tipoespecies:
       filtered_df = filtered_df[filtered_df['tipoespecie'].isin(tipoespecies)]
+      maindf = maindf[maindf['tipoespecie'].isin(tipoespecies)]
     if especies:
       filtered_df = filtered_df[filtered_df['especie'].isin(especies)]
+      maindf = maindf[maindf['especie'].isin(especies)]
+      
+  # Agrupar los datos según el período seleccionado
+    if periodo == 'días':
+      maindf = maindf.groupby(pd.Grouper(key='fecha', freq='D')).agg({'kilos': 'sum', 'euros': 'sum', 'precio': 'mean'}).dropna().reset_index()
+    elif periodo == 'meses':
+      maindf = maindf.groupby(pd.Grouper(key='fecha', freq='ME')).agg({'kilos': 'sum', 'euros': 'sum', 'precio': 'mean'}).dropna().reset_index()
+    else:
+      #maindf = maindf.groupby(pd.Grouper(key='fecha', freq='YE')).agg({'kilos': 'sum', 'euros': 'sum', 'precio': 'mean'}).dropna().reset_index()
+      maindf = maindf.groupby(maindf['fecha'].dt.year).agg({'kilos': 'sum', 'euros': 'sum', 'precio': 'mean'}).dropna().reset_index()
       
     
     df_years = filtered_df.groupby(['year']).sum().reset_index()
@@ -443,14 +468,23 @@ def update_graphs(provincias,lonjas,tipoespecies,especies,start_date,end_date):
     
     fig1 = make_subplots(specs=[[{"secondary_y": True}]])
     
+    fig1.add_trace(go.Scatter(x=maindf['fecha'], y=maindf['kilos'], name='kilos', fill="tonexty", mode='lines+markers', line_shape='spline', line=dict(width=3)),secondary_y=False)
+    fig1.add_trace(go.Scatter(x=maindf['fecha'], y=maindf['euros'], name='euros', fill="tonexty", mode='lines+markers', line_shape='spline', line=dict(width=3)),secondary_y=False)
+    fig1.add_trace(go.Scatter(x=maindf['fecha'], y=maindf['precio'], name='precio medio', fill="none", mode='lines+markers', line_shape='spline', line=dict(color='#9614b2', width=3)),secondary_y=True)
+    
     # fig1 = go.Figure()
-    fig1.add_trace(go.Scatter(name='kilos', x=df_years['year'], y=df_years['kilos'], fill="tonexty", mode='lines+markers', line_shape='spline', line=dict(width=3)), secondary_y=False)
-    fig1.add_trace(go.Scatter(name='euros', x=df_years['year'], y=df_years['euros'], fill="tonexty", mode='lines+markers', line_shape='spline', line=dict(width=3)), secondary_y=False)
-    fig1.add_trace(go.Scatter(name='precio medio', x=df_years['year'], y=df_years['precio'], fill="none", mode='lines+markers', line_shape='spline', line=dict(color='#9614b2', width=3)), secondary_y=True)
+    # fig1.add_trace(go.Scatter(name='kilos', x=df_years['year'], y=df_years['kilos'], fill="tonexty", mode='lines+markers', line_shape='spline', line=dict(width=3)), secondary_y=False)
+    # fig1.add_trace(go.Scatter(name='euros', x=df_years['year'], y=df_years['euros'], fill="tonexty", mode='lines+markers', line_shape='spline', line=dict(width=3)), secondary_y=False)
+    # fig1.add_trace(go.Scatter(name='precio medio', x=df_years['year'], y=df_years['precio'], fill="none", mode='lines+markers', line_shape='spline', line=dict(color='#9614b2', width=3)), secondary_y=True)
     
     # Establecer los títulos de los ejes de coordenadas
     fig1.update_yaxes(title_text="Total de kilos y euros", secondary_y=False)
     fig1.update_yaxes(title_text="Precio medio", secondary_y=True)
+    #Cambiar las etiquetas del eje de coordenadas
+    if periodo == 'meses':
+      fig1.update_xaxes(tickformat = '%B-%Y', dtick='M1')
+    elif periodo == 'años':
+      fig1.update_xaxes(tickformat = '%Y', dtick='Y1')
     
     #Gráfico de tarta
     fig2 = px.pie(filtered_df.groupby('tipoespecie')['kilos'].sum().reset_index(), values='kilos', names='tipoespecie', hole=0.4)

@@ -166,5 +166,92 @@ def obtenerVentas(fechaInicio, fechaFin, client):
     
     return df
 
+#Obtener datos de ventas según el período dado y unas fechas de inicio y fin
+def obtenerVentasPeriodo(fechaInicio, fechaFin, periodo, client):
+    # Definir el intervalo de agrupación según el periodo seleccionado
+    if periodo == 'días':
+        interval = 'day'
+    elif periodo == 'meses':
+        interval = 'month'
+    else:  # 'Años'
+        interval = 'year'
+        
+    # Construir el cuerpo de la consulta
+    query = {
+        "size": 0, 
+        "query": {
+            "range": {
+                "fechaventa": {
+                    "gte": fechaInicio,
+                    "lte": fechaFin
+                }
+            }
+        },
+        "aggs": {
+            "ventas_por_periodo": {
+                "date_histogram": {
+                    "field": "fechaventa",
+                    "calendar_interval": interval
+                },
+                "aggs": {
+                    "by_provincia": {
+                        "terms": {"field": "provincia.keyword",
+                                  "size": 10},
+                        "aggs": {
+                            "by_establecimiento": {
+                                "terms": {"field": "establecimiento.keyword",
+                                          "size": 30},
+                                "aggs": {
+                                    "by_tipoespecie": {
+                                        "terms": {"field": "tipoespecie.keyword"},
+                                        "aggs": {
+                                            "by_especie": {
+                                                "terms": {"field": "especie.keyword"},
+                                                "aggs": {
+                                                    "total_kilos": {"sum": {"field": "kilos"}},
+                                                    "total_euros": {"sum": {"field": "euros"}}
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    # Ejecutar la consulta
+    response = client.search(index=settings.OPENSEARCH_INDEX, body=query)
+
+    # Procesar los resultados de las agregaciones
+    all_data = response['aggregations']['ventas_por_periodo']['buckets']
+
+    # Extraer los datos de las agregaciones y convertirlos en un DataFrame de pandas
+    data = []
+    
+    for periodo in all_data:
+        fecha_periodo = periodo['key_as_string']
+        for provincia in periodo['by_provincia']['buckets']:
+            for establecimiento in provincia['by_establecimiento']['buckets']:
+                for tipoespecie in establecimiento['by_tipoespecie']['buckets']:
+                    for especie in tipoespecie['by_especie']['buckets']:
+                        data.append({
+                            'fecha': fecha_periodo,
+                            'provincia': provincia['key'],
+                            'establecimiento': establecimiento['key'],
+                            'tipoespecie': tipoespecie['key'],
+                            'especie': especie['key'],
+                            'kilos': especie['total_kilos']['value'],
+                            'euros': especie['total_euros']['value']
+                        })
+
+    # Convertir a DataFrame
+    df = pd.DataFrame(data)
+    df['fecha'] = pd.to_datetime(df['fecha'])  # Nos aseguramos que el campo 'fecha' esté en formato datetime
+    df['precio'] = df['euros']/df['kilos']
+    return df
    
 

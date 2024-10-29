@@ -12,12 +12,6 @@ import pandas as pd
 # Definición de páginas (vistas) de la aplicación.
     
 def home(request):
-    # # Pasar los datos agregados al contexto
-    # context = {
-    #     "data": data,
-    #     "plot_div": plot_div
-    # }   
-    # return render(request, 'pescavolutionApp/home.html', context)
     return render(request, 'pescavolutionApp/home.html', {'user_id': request.user.id,
                                                           "dash_context": {"user_id": {"value": request.user.id}
                                                                            }})
@@ -31,12 +25,6 @@ def cargaDatos(request):
         message = "Selecciona un fichero"
         
     return render(request, "pescavolutionApp/cargaDatos.html", {"message": message})
-
-def filtros(request):
-    return render(request, "pescavolutionApp/filtros.html")
-
-def agrupaciones(request):
-    return render(request, "pescavolutionApp/agrupaciones.html")
 
 # Definición de la vista "Mis Filtros"
 def misFiltros(request):
